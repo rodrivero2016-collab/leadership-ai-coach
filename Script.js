@@ -1,3 +1,4 @@
+
 // === CONFIGURATION ===
 const ASSISTANT_ID = 'asst_hCS1uSyDvfeS1Zk1sFmXxWT4';
 let API_KEY = null;
@@ -38,36 +39,37 @@ const sendBtn = document.getElementById('send-btn');
 const chatArea = document.getElementById('chat-area');
 
 // === PRE-WRITTEN ANSWERS FOR FREE TIER ===
-const FREE_ANSWERS = {
-    "startwhy_sinek": {
-        keywords: ["start with why", "simon sinek", "sinek", "golden circle", "why how what", "inspire people", "purpose driven", "start why"],
-        answer: `Based on Simon Sinek's "Start With Why" principles, effective leaders inspire action by communicating their purpose first. Focus on why your team's work matters, not just what they need to do. This creates intrinsic motivation that drives performance.
-
-When you start with why, people aren't just completing tasks—they're contributing to a meaningful mission. Sinek's Golden Circle framework (Why → How → What) shows that inspiring leaders work from the inside out, beginning with purpose rather than ending with it.
-
-This aligns perfectly with Juan Cuellar's principle that "Leadership must start at the point of empathy"—understanding and communicating the deeper purpose connects emotionally with your team.`
-    },
-    
-    "starfish_spider": {
-        keywords: ["starfish and spider", "starfish spider", "starfish", "starfish", "spider", "decentralized", "centralized", "brafman", "beckstrom", "catalyst", "distributed", "starfish and spider", "starfish spider"],
+const FREE_ANSWERS = [
+    {
+        name: "starfish_spider",
+        keywords: ["starfish and the spider", "starfish and spider", "starfish spider", "starfish", "spider"],
         answer: `Based on "The Starfish and the Spider" by Ori Brafman and Rod Beckstrom, this book explores the power of decentralized leadership. Like a starfish that regenerates when cut, decentralized organizations distribute power throughout the network rather than concentrating it at the top.
 
 Traditional "spider" organizations have a central brain—cut off the head, and the organization dies. But "starfish" organizations have no single leader controlling everything. Power is distributed, making them incredibly resilient and adaptive. Examples include Wikipedia, Alcoholics Anonymous, and Apache tribes.
 
 This model aligns with Juan Cuellar's A.C.T. Framework—decentralization requires tremendous transparency and accountability at every level, with continuity built into the system rather than dependent on one leader.`
     },
-    
-    "army_leadership": {
-        keywords: ["army", "military", "fm 6-22", "fm 622", "fm6-22", "army leadership", "army values", "be know do", "ldrship", "soldier", "military leadership", "doctrine"],
+    {
+        name: "army_leadership",
+        keywords: ["fm 6-22", "fm 622", "fm6-22", "army leadership", "army values", "military leadership", "military doctrine"],
         answer: `Based on FM 6-22: Army Leadership doctrine, effective military leadership is built on three pillars: Lead (influence others), Develop (improve self and others), and Achieve (accomplish the mission).
 
 Army leadership emphasizes that leadership is a process of influencing people by providing purpose, direction, and motivation to accomplish the mission and improve the organization. Character and competence are equally essential—you need both to be an effective leader.
 
 The Army Leadership Requirements Model includes attributes (what a leader is) and competencies (what a leader does). The seven Army Values—Loyalty, Duty, Respect, Selfless Service, Honor, Integrity, and Personal Courage (LDRSHIP)—form the foundation. Juan Cuellar's A.C.T. Framework (Accountability, Continuity, Transparency) aligns perfectly with these values.`
     },
-    
-    "levels_leadership": {
-        keywords: ["5 levels", "five levels", "todd dewett", "dewett", "little black book", "leadership levels", "position permission production"],
+    {
+        name: "startwhy_sinek",
+        keywords: ["start with why", "simon sinek", "golden circle", "why how what"],
+        answer: `Based on Simon Sinek's "Start With Why" principles, effective leaders inspire action by communicating their purpose first. Focus on why your team's work matters, not just what they need to do. This creates intrinsic motivation that drives performance.
+
+When you start with why, people aren't just completing tasks—they're contributing to a meaningful mission. Sinek's Golden Circle framework (Why → How → What) shows that inspiring leaders work from the inside out, beginning with purpose rather than ending with it.
+
+This aligns perfectly with Juan Cuellar's principle that "Leadership must start at the point of empathy"—understanding and communicating the deeper purpose connects emotionally with your team.`
+    },
+    {
+        name: "levels_leadership",
+        keywords: ["5 levels", "five levels", "todd dewett", "little black book"],
         answer: `Based on leadership progression principles (similar to those in "The Little Black Book of Leadership" by Dr. Todd Dewett), leadership typically develops through distinct levels:
 
 Level 1 - Position: People follow because they have to. Authority comes from title alone.
@@ -78,9 +80,9 @@ Level 5 - Pinnacle: People follow because of who you are and what you represent.
 
 The key insight: you can't skip levels. You must build trust (Level 2) before you can lead through production (Level 3). This aligns with Juan Cuellar's principle that leadership starts with empathy—without genuine care for people, sustainable leadership is impossible.`
     },
-    
-    "act_framework": {
-        keywords: ["act framework", "a.c.t.", "act", "accountability continuity transparency", "juan cuellar", "cuellar"],
+    {
+        name: "act_framework",
+        keywords: ["act framework", "a.c.t.", "accountability continuity transparency", "juan cuellar"],
         answer: `Juan Cuellar's A.C.T. Framework stands for Accountability, Continuity, and Transparency—three pillars of effective leadership:
 
 **Accountability**: Starts and ends with the leader. By taking ownership of outcomes, leaders set the standard for the entire organization. Everyone becomes accountable when the leader models it first.
@@ -91,20 +93,9 @@ The key insight: you can't skip levels. You must build trust (Level 2) before yo
 
 This framework integrates beautifully with all four books in your library: Sinek's "why" requires transparency, decentralized starfish organizations need all three elements, Army Leadership emphasizes accountability and continuity, and leadership development demands transparent feedback.`
     },
-    
-    "empathy": {
-        keywords: ["empathy", "empathetic", "understanding people", "care about people", "emotional intelligence"],
-        answer: `Leadership that starts with empathy—a core principle emphasized by Juan Cuellar—means understanding people's perspectives, emotions, and motivations before attempting to lead them.
-
-Empathy in leadership involves: 1) Active listening without judgment, 2) Seeking to understand before being understood, 3) Recognizing that people have different backgrounds and needs, and 4) Leading with compassion while maintaining accountability.
-
-This principle appears across all four leadership books: Sinek's "Start With Why" shows that understanding what motivates people emotionally drives inspiration. "The Starfish and the Spider" demonstrates that catalyst leaders succeed through genuine interest in others. Army Leadership emphasizes knowing your people. And leadership development frameworks stress that relationship-building precedes results.
-
-Empathy doesn't mean being soft—it means being effective. When you understand what drives your team, you can align their motivations with organizational goals.`
-    },
-    
-    "trust": {
-        keywords: ["trust", "build trust", "building trust", "trustworthy", "credibility"],
+    {
+        name: "trust",
+        keywords: ["trust", "build trust", "building trust"],
         answer: `Building trust is fundamental to effective leadership and appears as a core principle across all four books in your library.
 
 **From "Start With Why"**: Trust comes from consistency between what you say (your "why") and what you do. When leaders authentically communicate and live their purpose, people trust them.
@@ -116,41 +107,10 @@ Empathy doesn't mean being soft—it means being effective. When you understand 
 **From Leadership Development**: Trust is earned at Level 2 (Permission) and must precede production results. Without it, leadership is impossible.
 
 Juan Cuellar's A.C.T. Framework reinforces this: Accountability builds trust through ownership, Continuity through reliability, and Transparency through openness.`
-    },
-    
-    "communication": {
-        keywords: ["communication", "communicate", "how to communicate", "talking to team", "message", "speaking"],
-        answer: `Effective communication is essential for leadership and each of your four books addresses it differently:
+    }
+];
 
-**From "Start With Why"**: Communicate the "why" before the "what." People need to understand purpose and meaning before they care about tasks and processes. The Golden Circle shows that inspiring communication works inside-out.
-
-**From "The Starfish and the Spider"**: In decentralized organizations, communication must be open and distributed. Information flows freely rather than being controlled from the top.
-
-**From Army Leadership**: Leaders provide purpose, direction, and motivation through clear, direct communication. The "commander's intent" ensures everyone understands the mission even when plans change.
-
-**From Leadership Development**: Communication builds trust (Level 2) and enables results (Level 3). Frequency and clarity matter more than eloquence.
-
-Juan Cuellar's Transparency principle (from A.C.T. Framework) emphasizes that open communication builds organizational trust.`
-    },
-    
-    "motivation": {
-        keywords: ["motivation", "motivate", "motivating people", "inspire", "engagement"],
-        answer: `Motivation is central to effective leadership, and your four books offer complementary perspectives:
-
-**From "Start With Why"**: Intrinsic motivation comes from understanding purpose. When people know "why" their work matters, they become self-motivated. External rewards (carrots and sticks) create compliance, not commitment.
-
-**From "The Starfish and the Spider"**: Decentralized organizations tap into intrinsic motivation by giving people autonomy and ownership. When people feel empowered rather than controlled, motivation increases naturally.
-
-**From Army Leadership**: Leaders motivate by providing purpose, direction, and inspiration. The mission gives meaning, the plan gives direction, and the leader's example gives inspiration.
-
-**From Leadership Development**: Motivation follows relationships. At Level 2 (Permission), people become motivated because they genuinely want to follow. At Level 4 (People Development), they're motivated by growth opportunities.
-
-Juan Cuellar's principle that "leadership starts with empathy" is key—understanding what motivates each person individually allows you to align their drivers with organizational goals.`
-    },
-    
-    "default": {
-        keywords: ["default"],
-        answer: `I can help you with leadership questions based on four specific books:
+const DEFAULT_ANSWER = `I can help you with leadership questions based on four specific books:
 
 1. **"Start With Why" by Simon Sinek** - Purpose-driven leadership, the Golden Circle, inspiring action
 2. **"The Starfish and the Spider" by Ori Brafman & Rod Beckstrom** - Decentralized organizations, catalyst leadership
@@ -159,14 +119,12 @@ Juan Cuellar's principle that "leadership starts with empathy" is key—understa
 
 Try asking about:
 - "What is Start With Why about?"
-- "Tell me about decentralized leadership"
+- "What is the starfish and the spider about?"
 - "What are the Army leadership values?"
 - "How do I build trust as a leader?"
 - "Explain the A.C.T. Framework"
 
-Each book offers unique insights that can transform how you lead.`
-    }
-};
+Each book offers unique insights that can transform how you lead.`;
 
 // === SHOW FREE TIER DISCLOSURE ON LOAD ===
 window.addEventListener('DOMContentLoaded', () => {
@@ -271,33 +229,24 @@ async function getAIResponse(userMessage) {
     }
 }
 
-// === FIND PRE-WRITTEN ANSWER (IMPROVED VERSION) ===
+// === FIND PRE-WRITTEN ANSWER (COMPLETELY REWRITTEN) ===
 function findFreeAnswer(question) {
     const q = question.toLowerCase();
     
-    // Sort answers by keyword length (longest first) to match more specific terms first
-    const sortedAnswers = Object.entries(FREE_ANSWERS)
-        .filter(([key]) => key !== 'default')
-        .sort((a, b) => {
-            // Get longest keyword from each answer
-            const maxLengthA = Math.max(...a[1].keywords.map(k => k.length));
-            const maxLengthB = Math.max(...b[1].keywords.map(k => k.length));
-            return maxLengthB - maxLengthA;
-        });
+    console.log("Question:", q); // Debug log
     
-    // Check each answer's keywords
-    for (const [key, data] of sortedAnswers) {
-        for (const keyword of data.keywords) {
-            // Check if keyword appears as whole word or phrase
-            const regex = new RegExp('\\b' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
-            if (regex.test(q) || q.includes(keyword)) {
-                return data.answer;
+    // Check each answer set
+    for (const answerSet of FREE_ANSWERS) {
+        for (const keyword of answerSet.keywords) {
+            if (q.includes(keyword.toLowerCase())) {
+                console.log("Matched:", answerSet.name, "with keyword:", keyword); // Debug log
+                return answerSet.answer;
             }
         }
     }
     
-    // Return default if no match
-    return FREE_ANSWERS['default'].answer;
+    console.log("No match found, returning default"); // Debug log
+    return DEFAULT_ANSWER;
 }
 
 // === ASSISTANTS API FUNCTIONS ===
