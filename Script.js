@@ -49,7 +49,7 @@ This aligns perfectly with Juan Cuellar's principle that "Leadership must start 
     },
     
     "starfish_spider": {
-        keywords: ["starfish", "spider", "decentralized", "centralized", "brafman", "beckstrom", "catalyst", "distributed", "starfish and spider", "starfish spider"],
+        keywords: ["starfish and spider", "starfish spider", "starfish", "starfish", "spider", "decentralized", "centralized", "brafman", "beckstrom", "catalyst", "distributed", "starfish and spider", "starfish spider"],
         answer: `Based on "The Starfish and the Spider" by Ori Brafman and Rod Beckstrom, this book explores the power of decentralized leadership. Like a starfish that regenerates when cut, decentralized organizations distribute power throughout the network rather than concentrating it at the top.
 
 Traditional "spider" organizations have a central brain—cut off the head, and the organization dies. But "starfish" organizations have no single leader controlling everything. Power is distributed, making them incredibly resilient and adaptive. Examples include Wikipedia, Alcoholics Anonymous, and Apache tribes.
@@ -271,17 +271,26 @@ async function getAIResponse(userMessage) {
     }
 }
 
-// === FIND PRE-WRITTEN ANSWER (FIXED VERSION) ===
+// === FIND PRE-WRITTEN ANSWER (IMPROVED VERSION) ===
 function findFreeAnswer(question) {
     const q = question.toLowerCase();
     
-    // Check each answer's keywords array
-    for (const [key, data] of Object.entries(FREE_ANSWERS)) {
-        if (key === 'default') continue;
-        
-        // Check if question contains any of the keywords
+    // Sort answers by keyword length (longest first) to match more specific terms first
+    const sortedAnswers = Object.entries(FREE_ANSWERS)
+        .filter(([key]) => key !== 'default')
+        .sort((a, b) => {
+            // Get longest keyword from each answer
+            const maxLengthA = Math.max(...a[1].keywords.map(k => k.length));
+            const maxLengthB = Math.max(...b[1].keywords.map(k => k.length));
+            return maxLengthB - maxLengthA;
+        });
+    
+    // Check each answer's keywords
+    for (const [key, data] of sortedAnswers) {
         for (const keyword of data.keywords) {
-            if (q.includes(keyword)) {
+            // Check if keyword appears as whole word or phrase
+            const regex = new RegExp('\\b' + keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b', 'i');
+            if (regex.test(q) || q.includes(keyword)) {
                 return data.answer;
             }
         }
