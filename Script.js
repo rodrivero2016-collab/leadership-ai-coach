@@ -1,398 +1,211 @@
-
-// === CONFIGURATION ===
-const ASSISTANT_ID = 'asst_hCS1uSyDvfeS1Zk1sFmXxWT4';
-let API_KEY = null;
-let THREAD_ID = null;
+let apiKey = '';
+let freeQuestions = 5;
+let questionsUsed = 0;
 let isProcessing = false;
 
-// === QUESTION TRACKING ===
-const MAX_FREE_QUESTIONS = 5;
-
-function getQuestionCount() {
-    const today = new Date().toDateString();
-    const stored = localStorage.getItem('leadershipAI_date');
-    const count = parseInt(localStorage.getItem('leadershipAI_count')) || 0;
+// Sample leadership responses based on the four texts (A.C.T. is J.Cuellar's philosophy)
+const responseLibrary = {
+    starfish: "<strong>The Starfish and the Spider</strong> by Brafman & Beckstrom teaches that decentralized organizations (starfish) are far more resilient than centralized ones (spiders). Cut off a spider's head, and it dies. Cut off a starfish's leg, and it grows a new one - the leg can even become a new starfish. This embodies <strong>Continuity</strong> from J.Cuellar's A.C.T. principles: when you distribute leadership rather than concentrate it, your organization survives disruptions. The book distinguishes between <strong>catalysts</strong> (who empower and inspire others) and <strong>CEOs</strong> (who control and direct). True resilience comes from decentralized power.",
     
-    if (stored !== today) {
-        localStorage.setItem('leadershipAI_date', today);
-        localStorage.setItem('leadershipAI_count', '0');
-        return 0;
+    fm622: "Drawing from <strong>FM 6-22</strong> and Juan Cuellar's <strong>Accountability</strong> principle: Army leadership doctrine emphasizes the Be-Know-Do model. Your character (Be) must align with your competence (Know) to produce effective action (Do). The seven Army values - Loyalty, Duty, Respect, Selfless Service, Honor, Integrity, Personal Courage - form the foundation. <strong>Accountability</strong> begins with the leader taking personal responsibility first, then building systems that create <strong>Continuity</strong> in your team's performance.",
+    
+    startwithwhy: "<strong>Start With Why</strong> by Simon Sinek revolutionized how we think about leadership and inspiration. People don't buy what you do; they buy <strong>why</strong> you do it. The Golden Circle moves from Why → How → What, but most leaders communicate backwards (What → How → Why). This aligns with <strong>Transparency</strong> from A.C.T. - when you clearly communicate your purpose, you build trust. Great leaders inspire action by starting with why their work matters, not just what needs to be done.",
+    
+    littleblackbook: "Dr. Todd Dewett's <strong>Little Black Book of Leadership</strong> gives us three daily rules that embody the A.C.T. principles: <strong>Reduce Ambiguity</strong> (Transparency), <strong>Be Fair</strong> (Accountability), and <strong>Stay Positive</strong> (builds Continuity). Clear communication eliminates confusion. Fairness demonstrates integrity and builds trust. Positivity creates an environment where people thrive. As Dewett emphasizes: <em>Excellence is free - it comes from work ethic and attitude, not resources.</em>",
+    
+    general: "Leadership wisdom from our four core texts shows that great leaders combine <strong>accountability</strong> (taking personal responsibility), <strong>continuity</strong> (building resilient systems), and <strong>transparency</strong> (operating with clarity). Whether you're addressing team conflict, building trust, or developing future leaders, start with empathy and apply these proven principles from military doctrine, corporate wisdom, and leadership research."
+};
+
+function matchQuestionToResponse(question) {
+    const q = question.toLowerCase();
+    
+    // Check for book-specific questions (flexible matching for typos)
+    if (q.includes('starfish') || q.includes('spider') || q.includes('brafman') || q.includes('beckstrom')) {
+        return responseLibrary.starfish;
     }
-    return count;
-}
-
-function incrementQuestionCount() {
-    const count = getQuestionCount() + 1;
-    localStorage.setItem('leadershipAI_count', count.toString());
-    return count;
-}
-
-function getRemainingQuestions() {
-    return MAX_FREE_QUESTIONS - getQuestionCount();
-}
-
-// === DOM ELEMENTS ===
-const apiKeyInput = document.getElementById('apiKey');
-const unlockBtn = document.getElementById('unlock-btn');
-const userInput = document.getElementById('userInput');
-const sendBtn = document.getElementById('send-btn');
-const chatArea = document.getElementById('chat-area');
-
-// === PRE-WRITTEN ANSWERS FOR FREE TIER ===
-const FREE_ANSWERS = [
-    {
-        name: "starfish_spider",
-        keywords: ["starfish and the spider", "starfish and spider", "starfish spider", "starfish", "spider"],
-        answer: `Based on "The Starfish and the Spider" by Ori Brafman and Rod Beckstrom, this book explores the power of decentralized leadership. Like a starfish that regenerates when cut, decentralized organizations distribute power throughout the network rather than concentrating it at the top.
-
-Traditional "spider" organizations have a central brain—cut off the head, and the organization dies. But "starfish" organizations have no single leader controlling everything. Power is distributed, making them incredibly resilient and adaptive. Examples include Wikipedia, Alcoholics Anonymous, and Apache tribes.
-
-This model aligns with Juan Cuellar's A.C.T. Framework—decentralization requires tremendous transparency and accountability at every level, with continuity built into the system rather than dependent on one leader.`
-    },
-    {
-        name: "army_leadership",
-        keywords: ["fm 6-22", "fm 622", "fm6-22", "army leadership", "army values", "military leadership", "military doctrine"],
-        answer: `Based on FM 6-22: Army Leadership doctrine, effective military leadership is built on three pillars: Lead (influence others), Develop (improve self and others), and Achieve (accomplish the mission).
-
-Army leadership emphasizes that leadership is a process of influencing people by providing purpose, direction, and motivation to accomplish the mission and improve the organization. Character and competence are equally essential—you need both to be an effective leader.
-
-The Army Leadership Requirements Model includes attributes (what a leader is) and competencies (what a leader does). The seven Army Values—Loyalty, Duty, Respect, Selfless Service, Honor, Integrity, and Personal Courage (LDRSHIP)—form the foundation. Juan Cuellar's A.C.T. Framework (Accountability, Continuity, Transparency) aligns perfectly with these values.`
-    },
-    {
-        name: "startwhy_sinek",
-        keywords: ["start with why", "simon sinek", "golden circle", "why how what"],
-        answer: `Based on Simon Sinek's "Start With Why" principles, effective leaders inspire action by communicating their purpose first. Focus on why your team's work matters, not just what they need to do. This creates intrinsic motivation that drives performance.
-
-When you start with why, people aren't just completing tasks—they're contributing to a meaningful mission. Sinek's Golden Circle framework (Why → How → What) shows that inspiring leaders work from the inside out, beginning with purpose rather than ending with it.
-
-This aligns perfectly with Juan Cuellar's principle that "Leadership must start at the point of empathy"—understanding and communicating the deeper purpose connects emotionally with your team.`
-    },
-    {
-        name: "levels_leadership",
-        keywords: ["5 levels", "five levels", "todd dewett", "little black book"],
-        answer: `Based on leadership progression principles (similar to those in "The Little Black Book of Leadership" by Dr. Todd Dewett), leadership typically develops through distinct levels:
-
-Level 1 - Position: People follow because they have to. Authority comes from title alone.
-Level 2 - Permission: People follow because they want to. Built on relationships and trust.
-Level 3 - Production: People follow because of results. Credibility comes from accomplishments.
-Level 4 - People Development: People follow because of what you've done for them.
-Level 5 - Pinnacle: People follow because of who you are and what you represent.
-
-The key insight: you can't skip levels. You must build trust (Level 2) before you can lead through production (Level 3). This aligns with Juan Cuellar's principle that leadership starts with empathy—without genuine care for people, sustainable leadership is impossible.`
-    },
-    {
-        name: "act_framework",
-        keywords: ["act framework", "a.c.t.", "accountability continuity transparency", "juan cuellar"],
-        answer: `Juan Cuellar's A.C.T. Framework stands for Accountability, Continuity, and Transparency—three pillars of effective leadership:
-
-**Accountability**: Starts and ends with the leader. By taking ownership of outcomes, leaders set the standard for the entire organization. Everyone becomes accountable when the leader models it first.
-
-**Continuity**: Building systems and processes that maintain organizational effectiveness regardless of personnel changes. The organization's heartbeat continues even when individuals come and go.
-
-**Transparency**: Acting openly so all stakeholders—internal and external—trust the organization's integrity. Transparent leaders eliminate doubt about motivations and decisions.
-
-This framework integrates beautifully with all four books in your library: Sinek's "why" requires transparency, decentralized starfish organizations need all three elements, Army Leadership emphasizes accountability and continuity, and leadership development demands transparent feedback.`
-    },
-    {
-        name: "trust",
-        keywords: ["trust", "build trust", "building trust"],
-        answer: `Building trust is fundamental to effective leadership and appears as a core principle across all four books in your library.
-
-**From "Start With Why"**: Trust comes from consistency between what you say (your "why") and what you do. When leaders authentically communicate and live their purpose, people trust them.
-
-**From "The Starfish and the Spider"**: In decentralized organizations, trust replaces control. Catalyst leaders build trust by empowering others and getting out of the way.
-
-**From Army Leadership**: The Be-Know-Do framework emphasizes that character (BE) and competence (KNOW) build the trust necessary to lead (DO). Army Values like integrity and honor are trust-builders.
-
-**From Leadership Development**: Trust is earned at Level 2 (Permission) and must precede production results. Without it, leadership is impossible.
-
-Juan Cuellar's A.C.T. Framework reinforces this: Accountability builds trust through ownership, Continuity through reliability, and Transparency through openness.`
+    if (q.includes('fm') || q.includes('6-22') || q.includes('622') || q.includes('army') || q.includes('military')) {
+        return responseLibrary.fm622;
     }
-];
+    if (q.includes('start with why') || q.includes('sinek') || (q.includes('why') && (q.includes('start') || q.includes('simon')))) {
+        return responseLibrary.startwithwhy;
+    }
+    // Flexible matching for "Little Black Book" - catches typos
+    if (q.includes('little') || q.includes('dewett') || q.includes('todd') || 
+        (q.includes('black') && q.includes('book')) || 
+        (q.includes('leadership') && (q.includes('book') || q.includes('dewett')))) {
+        return responseLibrary.littleblackbook;
+    }
+    
+    // For general leadership questions
+    return responseLibrary.general;
+}
 
-const DEFAULT_ANSWER = `I can help you with leadership questions based on four specific books:
-
-1. **"Start With Why" by Simon Sinek** - Purpose-driven leadership, the Golden Circle, inspiring action
-2. **"The Starfish and the Spider" by Ori Brafman & Rod Beckstrom** - Decentralized organizations, catalyst leadership
-3. **FM 6-22: Army Leadership** - Military leadership doctrine, Be-Know-Do, Army Values
-4. **Leadership Development Principles** - Building trust, developing others, practical leadership skills
-
-Try asking about:
-- "What is Start With Why about?"
-- "What is the starfish and the spider about?"
-- "What are the Army leadership values?"
-- "How do I build trust as a leader?"
-- "Explain the A.C.T. Framework"
-
-Each book offers unique insights that can transform how you lead.`;
-
-// === SHOW FREE TIER DISCLOSURE ON LOAD ===
-window.addEventListener('DOMContentLoaded', () => {
-    const remaining = getRemainingQuestions();
-    const disclosure = document.createElement('div');
-    disclosure.className = 'warning-note';
-    disclosure.style.marginTop = '10px';
-    disclosure.innerHTML = `
-        <strong>📋 Free Tier Notice:</strong> You have <strong>${remaining} free questions</strong> remaining today. 
-        Free responses use pre-written answers covering 10-15 common questions about each book. 
-        For unlimited AI-powered responses from all four books, add your OpenAI API key below.
-    `;
-    chatArea.insertBefore(disclosure, chatArea.firstChild);
-});
-
-// === UNLOCK PREMIUM ===
-unlockBtn.addEventListener('click', () => {
-    const key = apiKeyInput.value.trim();
-    if (key.startsWith('sk-') && key.length > 20) {
-        API_KEY = key;
-        apiKeyInput.value = '';
-        apiKeyInput.type = 'text';
-        apiKeyInput.value = '✓ Premium Unlocked!';
-        apiKeyInput.disabled = true;
-        unlockBtn.disabled = true;
-        unlockBtn.textContent = '✓ Premium Active';
-        unlockBtn.style.backgroundColor = '#28a745';
-        
-        appendMessage('🎉 Premium unlocked! You now have unlimited AI-powered access to all four leadership books with personalized, dynamic responses.', 'ai');
+// Connect premium button
+document.getElementById('unlock-premium-button').addEventListener('click', function() {
+    const input = document.getElementById('api-key-input').value.trim();
+    
+    if (!input) {
+        alert('Please enter an API key');
+        return;
+    }
+    
+    if (input.startsWith('sk-') && input.length > 20) {
+        apiKey = input;
+        document.querySelector('.premium-section').style.display = 'none';
+        document.getElementById('ai-response-display').innerHTML = '<div style="background: #d4edda; padding: 12px; border-radius: 6px; color: #155724; border: 2px solid #c3e6cb;"><strong>✅ Premium Access Unlocked!</strong><br>Ask unlimited leadership questions based exclusively on the four texts and A.C.T. principles!</div>';
+        questionsUsed = 0;
     } else {
-        alert('Please enter a valid OpenAI API key (starts with sk-)');
+        alert('Invalid API key format. OpenAI API keys start with "sk-" and are longer than 20 characters.');
     }
 });
 
-// === SEND MESSAGE ===
-sendBtn.addEventListener('click', () => {
+// Main Ask AI function
+document.getElementById('ask-ai-button').addEventListener('click', askAI);
+
+function askAI() {
     if (isProcessing) return;
-    
-    const message = userInput.value.trim();
-    if (!message) return;
-    
-    appendMessage(message, 'user');
-    userInput.value = '';
-    
-    getAIResponse(message);
-});
 
-userInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && !isProcessing) {
-        sendBtn.click();
+    const question = document.getElementById('user-question-input').value.trim();
+    
+    if (!question) {
+        alert('Please enter a question');
+        return;
     }
-});
 
-// === MAIN AI FUNCTION ===
-async function getAIResponse(userMessage) {
-    isProcessing = true;
-    sendBtn.disabled = true;
-    sendBtn.textContent = 'Thinking...';
-    
-    try {
-        // FREE TIER: Use pre-written answers if no API key
-        if (!API_KEY) {
-            const remaining = getRemainingQuestions();
-            
-            if (remaining <= 0) {
-                appendMessage('⚠️ You\'ve reached your 5 free questions for today. Questions reset daily at midnight. To continue, please add your OpenAI API key above for unlimited access.', 'ai');
-                return;
-            }
-            
-            // Find matching pre-written answer
-            const answer = findFreeAnswer(userMessage);
-            appendMessage(answer, 'ai');
-            
-            // Increment and show remaining
-            const newRemaining = MAX_FREE_QUESTIONS - incrementQuestionCount();
-            if (newRemaining > 0) {
-                appendMessage(`💡 You have ${newRemaining} free questions remaining today. For unlimited AI-powered responses, add your OpenAI API key above.`, 'ai');
-            } else {
-                appendMessage('⚠️ You\'ve used all 5 free questions for today. Add your OpenAI API key above for unlimited access, or return tomorrow for 5 more free questions.', 'ai');
-            }
-            
+    // Check if using free tier
+    if (!apiKey) {
+        if (questionsUsed >= freeQuestions) {
+            alert('You\'ve used your 5 free questions today! Get unlimited access by adding your OpenAI API key above.');
             return;
         }
         
-        // PREMIUM TIER: Full AI responses
-        if (!THREAD_ID) {
-            THREAD_ID = await createThread();
+        questionsUsed++;
+        
+        // Add user message
+        addMessage(question, 'user');
+        
+        // Simulate thinking delay
+        setTimeout(() => {
+            // Match the question to the appropriate response
+            const response = matchQuestionToResponse(question);
+            
+            addMessage(response, 'ai-sample');
+            
+            // Show remaining questions
+            const remaining = freeQuestions - questionsUsed;
+            if (remaining > 0) {
+                addWarning(`<strong>Free Tier:</strong> ${remaining} questions remaining today. Upgrade for unlimited personalized responses!`);
+            } else {
+                addError('<strong>Free Trial Complete!</strong> Add your OpenAI API key above for unlimited custom leadership coaching based on all four texts!');
+            }
+        }, 800);
+        
+        document.getElementById('user-question-input').value = '';
+        return;
+    }
+
+    // Premium tier with API key
+    isProcessing = true;
+    document.getElementById('ask-ai-button').disabled = true;
+    document.getElementById('ask-ai-button').textContent = 'Analyzing...';
+    
+    addMessage(question, 'user');
+    const thinkingMsg = addMessage('🤔 Consulting the four leadership texts and A.C.T. principles...', 'ai-thinking');
+    
+    callOpenAI(question, thinkingMsg);
+    
+    document.getElementById('user-question-input').value = '';
+}
+
+async function callOpenAI(question, thinkingMsg) {
+    const systemPrompt = `You are an expert leadership consultant trained EXCLUSIVELY on these four texts:
+
+1. **FM 6-22: Army Leadership** - Military doctrine emphasizing Be-Know-Do model and Army values (Loyalty, Duty, Respect, Selfless Service, Honor, Integrity, Personal Courage)
+
+2. **Start With Why by Simon Sinek** - People don't buy what you do; they buy why you do it. The Golden Circle: Why → How → What. Inspire action through purpose.
+
+3. **The Starfish and the Spider by Ori Brafman & Rod Beckstrom** - Decentralized organizations (starfish) are more resilient than centralized ones (spiders). Catalysts vs. CEOs. Distributed leadership.
+
+4. **Little Black Book of Leadership by Dr. Todd Dewett** - Three daily rules: Reduce Ambiguity, Be Fair, Stay Positive. Excellence is free - it comes from work ethic and attitude.
+
+You also apply Juan Cuellar's **A.C.T. principles**:
+- **Accountability**: Leadership starts and ends with personal responsibility
+- **Continuity**: Build resilient systems that maintain momentum  
+- **Transparency**: Operate with clarity for stakeholder trust
+
+"Leadership must start at the point of empathy" (J.Cuellar)
+
+Draw from these sources ONLY. Be specific about which text supports your advice. Connect concepts to the A.C.T. principles where relevant.`;
+
+    try {
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + apiKey
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: question }
+                ],
+                max_tokens: 400,
+                temperature: 0.7
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.error) {
+            throw new Error(data.error.message || 'API error occurred');
         }
         
-        await addMessageToThread(userMessage);
-        const runId = await runAssistant();
-        const response = await waitForCompletion(runId);
-        appendMessage(response, 'ai');
-        
+        thinkingMsg.remove();
+        addMessage(data.choices[0].message.content, 'ai-premium');
     } catch (error) {
         console.error('Error:', error);
-        appendMessage(`❌ Error: ${error.message}. Please check your API key and try again.`, 'ai');
+        thinkingMsg.remove();
+        addError(`❌ <strong>Error:</strong> ${error.message}. Please check your API key and try again.`);
     } finally {
         isProcessing = false;
-        sendBtn.disabled = false;
-        sendBtn.textContent = 'Ask Leadership AI';
+        document.getElementById('ask-ai-button').disabled = false;
+        document.getElementById('ask-ai-button').textContent = 'Ask Leadership AI';
     }
 }
 
-// === FIND PRE-WRITTEN ANSWER (COMPLETELY REWRITTEN) ===
-function findFreeAnswer(question) {
-    const q = question.toLowerCase();
-    
-    console.log("Question:", q); // Debug log
-    
-    // Check each answer set
-    for (const answerSet of FREE_ANSWERS) {
-        for (const keyword of answerSet.keywords) {
-            if (q.includes(keyword.toLowerCase())) {
-                console.log("Matched:", answerSet.name, "with keyword:", keyword); // Debug log
-                return answerSet.answer;
-            }
-        }
-    }
-    
-    console.log("No match found, returning default"); // Debug log
-    return DEFAULT_ANSWER;
-}
-
-// === ASSISTANTS API FUNCTIONS ===
-async function createThread() {
-    const response = await fetch('https://api.openai.com/v1/threads', {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json',
-            'OpenAI-Beta': 'assistants=v2'
-        }
-    });
-    
-    if (!response.ok) throw new Error('Failed to create thread');
-    const data = await response.json();
-    return data.id;
-}
-
-async function addMessageToThread(content) {
-    const response = await fetch(`https://api.openai.com/v1/threads/${THREAD_ID}/messages`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json',
-            'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({
-            role: 'user',
-            content: content
-        })
-    });
-    
-    if (!response.ok) throw new Error('Failed to add message');
-    return await response.json();
-}
-
-async function runAssistant() {
-    const response = await fetch(`https://api.openai.com/v1/threads/${THREAD_ID}/runs`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'Content-Type': 'application/json',
-            'OpenAI-Beta': 'assistants=v2'
-        },
-        body: JSON.stringify({
-            assistant_id: ASSISTANT_ID,
-            instructions: `You are a Leadership AI Coach with deep expertise in four specific leadership books. Your job is to provide book-specific, tailored answers.
-
-CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
-
-1. IDENTIFY THE BOOK FIRST:
-   - Keywords "Start With Why" OR "Simon Sinek" OR "purpose" OR "why" → Use "Start With Why"
-   - Keywords "Starfish" OR "Spider" OR "decentralized" OR "Brafman" OR "Beckstrom" → Use "The Starfish and the Spider"
-   - Keywords "Army" OR "FM 6-22" OR "military leadership" OR "doctrine" → Use "FM 6-22: Army Leadership"
-   - Keywords "5 Levels" OR "Todd Dewett" OR "Little Black Book" → Use "Little Black Book of Leadership"
-   - If NO specific book mentioned, search ALL books and cite which one you're using
-
-2. ANSWER REQUIREMENTS:
-   ✓ ALWAYS start by stating: "Based on [Book Name] by [Author]..."
-   ✓ Use ONLY content from that specific book
-   ✓ Cite specific concepts, frameworks, examples, and principles from the book
-   ✓ Give practical, actionable advice based on book content
-   ✓ Integrate Juan Cuellar's A.C.T. Framework where relevant (Accountability, Continuity, Transparency)
-   ✓ Apply the principle: "Leadership must start at the point of empathy"
-   ✓ Keep responses conversational but substantive (2-4 paragraphs)
-
-3. WHAT YOU MUST NEVER DO:
-   ✗ NEVER give generic AI responses not from the books
-   ✗ NEVER give the same answer for different books
-   ✗ NEVER mix content from multiple books unless asked to compare
-   ✗ NEVER answer without first searching the relevant book content
-   ✗ NEVER make up book content - only use what's actually in the uploaded files
-
-4. RESPONSE FORMAT:
-   Line 1: "Based on [Book Title] by [Author]..."
-   Lines 2-4: Specific concepts, frameworks, and examples from that book
-   Final lines: Practical application to the user's question
-
-Now carefully read the user's question, identify which book they're asking about, and provide a specific, book-grounded answer.`
-        })
-    });
-    
-    if (!response.ok) throw new Error('Failed to run assistant');
-    const data = await response.json();
-    return data.id;
-}
-
-async function waitForCompletion(runId) {
-    let attempts = 0;
-    const maxAttempts = 60;
-    
-    while (attempts < maxAttempts) {
-        const response = await fetch(`https://api.openai.com/v1/threads/${THREAD_ID}/runs/${runId}`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${API_KEY}`,
-                'OpenAI-Beta': 'assistants=v2'
-            }
-        });
-        
-        if (!response.ok) throw new Error('Failed to check run status');
-        const run = await response.json();
-        
-        if (run.status === 'completed') {
-            return await getLatestMessage();
-        } else if (run.status === 'failed' || run.status === 'cancelled' || run.status === 'expired') {
-            throw new Error(`Run ${run.status}: ${run.last_error?.message || 'Unknown error'}`);
-        }
-        
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        attempts++;
-    }
-    
-    throw new Error('Response timeout - please try again');
-}
-
-async function getLatestMessage() {
-    const response = await fetch(`https://api.openai.com/v1/threads/${THREAD_ID}/messages?limit=1`, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${API_KEY}`,
-            'OpenAI-Beta': 'assistants=v2'
-        }
-    });
-    
-    if (!response.ok) throw new Error('Failed to get messages');
-    const data = await response.json();
-    
-    if (data.data && data.data.length > 0) {
-        const message = data.data[0];
-        if (message.content && message.content[0] && message.content[0].text) {
-            return message.content[0].text.value;
-        }
-    }
-    
-    throw new Error('No response from assistant');
-}
-
-// === DISPLAY HELPER ===
-function appendMessage(text, sender) {
+function addMessage(text, type) {
+    const chatDiv = document.getElementById('ai-response-display');
     const msgDiv = document.createElement('div');
-    msgDiv.classList.add(sender === 'user' ? 'user-input' : 'chat-response');
     
-    const formattedText = text.replace(/\n/g, '<br>');
-    msgDiv.innerHTML = `<p>${formattedText}</p>`;
+    if (type === 'user') {
+        msgDiv.className = 'message user-message';
+        msgDiv.innerHTML = `<strong>You:</strong> ${text}`;
+    } else if (type.startsWith('ai')) {
+        msgDiv.className = 'message ai-message';
+        const label = type === 'ai-premium' ? '🎯 Cum Corde Leadership AI' : '🎯 Leadership AI (Sample)';
+        msgDiv.innerHTML = `<strong>${label}:</strong> ${text}`;
+    }
     
-    chatArea.insertBefore(msgDiv, userInput);
-    msgDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+    return msgDiv;
+}
+
+function addWarning(text) {
+    const chatDiv = document.getElementById('ai-response-display');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'warning-message';
+    msgDiv.innerHTML = text;
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
+}
+
+function addError(text) {
+    const chatDiv = document.getElementById('ai-response-display');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'error-message';
+    msgDiv.innerHTML = text;
+    chatDiv.appendChild(msgDiv);
+    chatDiv.scrollTop = chatDiv.scrollHeight;
 }
